@@ -48,10 +48,10 @@ const ui = {
     isPlaying = !isPlaying;
   },
   reset: () => {
-    initAll(initialDistance);
+    initAll(stride);
   },
-  subStepNum: 1,
-  resolution: 0,
+  timeStep: 13,
+  roughness: 4,
 };
 
 // ===================== GUI =====================
@@ -60,31 +60,32 @@ function initGUI() {
   const gui = new dat.GUI();
   gui.add(ui, "toggleUpdating").name("Run / Pause");
   gui.add(ui, "reset").name("Reset");
-  gui.add(ui, "subStepNum", 1, 10).step(1).name("Sub Steps");
-  gui.add(ui, "resolution", 0, 100).step(1).name("Resolution").onChange((val) => {
-    initialDistance = 1 / ((10 + val) / 10) 
-  });
+  gui.add(ui, "timeStep", 1, 100).step(1).name("Time Step");
+  gui
+    .add(ui, "roughness", 1, 4)
+    .step(1)
+    .name("Roughness")
+    .onChange((val) => {
+      stride = 2 ** val;
+    });
 }
 // ===================== MAIN =====================
 
 let isPlaying: Boolean = false;
-let initialDistance = 1;
-const timeStep = 13;
+let stride = 2 ** ui.roughness;
 
 async function main() {
   const stats = new Stats();
   document.body.appendChild(stats.dom);
 
-  await initAll(initialDistance);
+  await initAll(stride);
 
   animate();
   function animate() {
     requestAnimationFrame(animate);
     stats.begin();
     if (isPlaying) {
-      for (let i = 0; i < ui.subStepNum; i++) {
-        updateStates(timeStep / ui.subStepNum / 1000);
-      }
+      updateStates(ui.timeStep / 1000);
       renderTerrain();
     }
     renderer.render(scene, camera);
@@ -92,10 +93,10 @@ async function main() {
   }
 }
 
-async function initAll(initialDistance: number) {
+async function initAll(stride: number) {
   removeMesh(scene);
   let terrain = await imageData();
-  initTerrain(terrain, 4, scene);
+  initTerrain(terrain, stride, scene);
 }
 
 function updateStates(dt: number) {

@@ -1,9 +1,10 @@
 import { Scene } from "three";
 import { initMesh, renderMesh } from "./render";
-import { GRAVITY, PIPE_AREA, PIPE_LENGTH, TERRAIN_MAX_ALT } from "./consts";
+import { GRAVITY, PIPE_AREA, PIPE_LENGTH, TERRAIN_MAX_ALT, TERRAIN_SIZE } from "./consts";
 
 let terrainHeight: Float32Array;
 let waterHeight: Float32Array;
+let tmpHeight: Float32Array;
 
 let flowL: Float32Array;
 let flowR: Float32Array;
@@ -32,13 +33,14 @@ export function renderTerrain() {
 export function initTerrain(imgData: ImageData, stride: number, scene: Scene) {
   let imgWidth = imgData.width;
   let imgHeight = imgData.height;
-  width = imgWidth / stride;
-  height = imgHeight / stride;
+  width = Math.floor(imgWidth / stride);
+  height = Math.floor(imgHeight / stride);
 
   let len = width * height;
 
   terrainHeight = new Float32Array(len);
   waterHeight = new Float32Array(len);
+  tmpHeight = new Float32Array(len);
 
   flowL = new Float32Array(len);
   flowR = new Float32Array(len);
@@ -70,6 +72,8 @@ export function initTerrain(imgData: ImageData, stride: number, scene: Scene) {
 export function updateTerain(timeStep: number) {
   waterIncrement(timeStep);
   flowSimulationFlowFlux(timeStep);
+  flowSimulationWaterHeight(timeStep);
+  flowSimulationVelocityField();
 }
 
 function waterIncrement(timeStep: number) {
@@ -81,6 +85,8 @@ function waterIncrement(timeStep: number) {
 
 function flowSimulationFlowFlux(timeStep: number) {
   let factor = (timeStep * PIPE_AREA * GRAVITY) / PIPE_LENGTH;
+  let lw = TERRAIN_SIZE / width;
+  let lh = TERRAIN_SIZE / height;
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
@@ -88,41 +94,127 @@ function flowSimulationFlowFlux(timeStep: number) {
       let iR = indexOfArr(w + 1, h, width);
       let iB = indexOfArr(w, h - 1, width);
       let iT = indexOfArr(w, h + 1, width);
+      let currHeight = terrainHeight[i] + waterHeight[i];
       if (w === 0) {
         flowL[i] = 0;
       } else {
-        let dhL = terrainHeight[i] + waterHeight[i] - terrainHeight[iL] - waterHeight[iL];
+        let dhL = currHeight - terrainHeight[iL] - waterHeight[iL];
         flowL[i] += factor * dhL;
         if (flowL[i] < 0) flowL[i] = 0;
       }
       if (w === width - 1) {
         flowR[i] = 0;
       } else {
-        let dhR = terrainHeight[i] + waterHeight[i] - terrainHeight[iR] - waterHeight[iR];
+        let dhR = currHeight - terrainHeight[iR] - waterHeight[iR];
         flowR[i] += factor * dhR;
         if (flowR[i] < 0) flowR[i] = 0;
       }
       if (h === 0) {
         flowB[i] = 0;
       } else {
-        let dhB = terrainHeight[i] + waterHeight[i] - terrainHeight[iB] - waterHeight[iB];
+        let dhB = currHeight - terrainHeight[iB] - waterHeight[iB];
         flowB[i] += factor * dhB;
         if (flowB[i] < 0) flowB[i] = 0;
       }
       if (h === height - 1) {
         flowT[i] = 0;
       } else {
-        let dhT = terrainHeight[i] + waterHeight[i] - terrainHeight[iT] - waterHeight[iT];
+        let dhT = currHeight - terrainHeight[iT] - waterHeight[iT];
         flowT[i] += factor * dhT;
         if (flowT[i] < 0) flowT[i] = 0;
       }
+      let foTot = flowL[i] + flowR[i] + flowB[i] + flowT[i];
+      if (foTot > 0) {
+        let K = (waterHeight[i] * (lw * lh)) / timeStep / foTot;
+        K = Math.min(1, K);
+        flowL[i] *= K;
+        flowR[i] *= K;
+        flowB[i] *= K;
+        flowT[i] *= K;
+      }
     }
   }
+  if (flowL.includes(NaN)) console.error("flowL includes NaN");
+  if (flowR.includes(NaN)) console.error("flowR includes NaN");
+  if (flowB.includes(NaN)) console.error("flowB includes NaN");
+  if (flowT.includes(NaN)) console.error("flowT includes NaN");
 }
 
-function flowSimulationWaterHeight() {}
+function flowSimulationWaterHeight(timeStep: number) {
+  let lw = TERRAIN_SIZE / width;
+  let lh = TERRAIN_SIZE / height;
+  for (let w = 0; w < width; w++) {
+    for (let h = 0; h < height; h++) {
+      let i = indexOfArr(w, h, width);
+      let iL = indexOfArr(w - 1, h, width);
+      let iR = indexOfArr(w + 1, h, width);
+      let iB = indexOfArr(w, h - 1, width);
+      let iT = indexOfArr(w, h + 1, width);
+      let dV = -(flowL[i] + flowR[i] + flowB[i] + flowT[i]);
+      if (w !== 0) {
+        dV += flowR[iL];
+      }
+      if (w !== width - 1) {
+        dV += flowL[iR];
+      }
+      if (h !== 0) {
+        dV += flowT[iB];
+      }
+      if (h !== height - 1) {
+        dV += flowB[iT];
+      }
+      dV *= timeStep;
+      tmpHeight[i] = waterHeight[i];
+      waterHeight[i] += dV / (lw * lh);
+      tmpHeight[i] = (tmpHeight[i] + waterHeight[i]) / 2;
+    }
+  }
+  if (tmpHeight.includes(NaN)) console.error("tmpHeight includes NaN");
+  if (waterHeight.includes(NaN)) console.error("waterHeight includes NaN");
+}
 
-function flowSimulationVelocityField() {}
+function flowSimulationVelocityField() {
+  let lw = TERRAIN_SIZE / width;
+  let lh = TERRAIN_SIZE / height;
+  for (let w = 0; w < width; w++) {
+    for (let h = 0; h < height; h++) {
+      let i = indexOfArr(w, h, width);
+      let iL = indexOfArr(w - 1, h, width);
+      let iR = indexOfArr(w + 1, h, width);
+      let iB = indexOfArr(w, h - 1, width);
+      let iT = indexOfArr(w, h + 1, width);
+      let fiR, fiL, fiT, fiB;
+      if (w === 0) {
+        fiR = 0;
+      } else {
+        fiR = flowR[iL];
+      }
+      if (w === width - 1) {
+        fiL = 0;
+      } else {
+        fiL = flowL[iR];
+      }
+      if (h === 0) {
+        fiT = 0;
+      } else {
+        fiT = flowT[iB];
+      }
+      if (h === height - 1) {
+        fiB = 0;
+      } else {
+        fiB = flowB[iT];
+      }
+      let dWw = (fiR - flowL[i] + flowR[i] - fiL) / 2;
+      let dWh = (fiT - flowB[i] + flowT[i] - fiB) / 2;
+      if (tmpHeight[i] !== 0) {
+        velLR[i] = dWw / (lw * tmpHeight[i]);
+        velBT[i] = dWh / (lh * tmpHeight[i]);
+      }
+    }
+  }
+  if (velLR.includes(NaN)) console.error("velLR includes NaN");
+  if (velBT.includes(NaN)) console.error("velBT includes NaN");
+}
 
 function erosionDeposition() {}
 
