@@ -1,6 +1,6 @@
 # HydraulicErosion
 
-[Demo Link](https://ygr4789.github.io/HydraulicErosion/)
+[Demo Link](https://ygr4789.github.io/HydraulicErosion-Simulation/)
 
 ## How to run local
 
