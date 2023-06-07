@@ -2,6 +2,7 @@ import { Scene } from "three";
 import { initMesh, renderMesh } from "./render";
 import {
   CAPACITY_CONSTANT,
+  CONST,
   DEPOSITION_CONSTANT,
   EPS,
   EROSION_CONSTANT,
@@ -10,7 +11,6 @@ import {
   PIPE_AREA,
   PIPE_LENGTH,
   PRECIPITATION,
-  RAINFALL_SIZE,
   TERRAIN_MAX_ALT,
   TERRAIN_SIZE,
 } from "./consts";
@@ -28,6 +28,7 @@ let flowT: Float32Array;
 let velLR: Float32Array;
 let velBT: Float32Array;
 
+let slope: Float32Array;
 let sediment: Float32Array;
 let tmpSediment: Float32Array;
 
@@ -65,6 +66,7 @@ export function initTerrain(imgData: ImageData, stride: number, scene: Scene) {
   velLR = new Float32Array(len);
   velBT = new Float32Array(len);
 
+  slope = new Float32Array(len);
   sediment = new Float32Array(len);
   tmpSediment = new Float32Array(len);
 
@@ -101,8 +103,8 @@ function waterIncrement(timeStep: number) {
   if (interactionValid) {
     let w = Math.round(IS.norW * (width - 1));
     let h = Math.round(IS.norH * (height - 1));
-    let dw = Math.round(width * RAINFALL_SIZE);
-    let dh = Math.round(height * RAINFALL_SIZE);
+    let dw = Math.round(width * CONST.RAINFALL_SIZE);
+    let dh = Math.round(height * CONST.RAINFALL_SIZE);
     for (let w_ = w - dw; w_ <= w + dw; w_++) {
       for (let h_ = h - dh; h_ <= h + dh; h_++) {
         if (w_ >= 0 && w_ < width && h_ >= 0 && h_ < height) {
@@ -126,10 +128,12 @@ function flowSimulationFlowFlux(timeStep: number) {
       let iB = indexOfArr(w, h - 1, width);
       let iT = indexOfArr(w, h + 1, width);
       let currHeight = terrainHeight[i] + waterHeight[i];
+      slope[i] = 0;
       if (w === 0) {
         flowL[i] = 0;
       } else {
         let dhL = currHeight - terrainHeight[iL] - waterHeight[iL];
+        slope[i] += Math.abs(dhL);
         flowL[i] += factor * dhL;
         if (flowL[i] < 0) flowL[i] = 0;
       }
@@ -137,6 +141,7 @@ function flowSimulationFlowFlux(timeStep: number) {
         flowR[i] = 0;
       } else {
         let dhR = currHeight - terrainHeight[iR] - waterHeight[iR];
+        slope[i] += Math.abs(dhR);
         flowR[i] += factor * dhR;
         if (flowR[i] < 0) flowR[i] = 0;
       }
@@ -144,6 +149,7 @@ function flowSimulationFlowFlux(timeStep: number) {
         flowB[i] = 0;
       } else {
         let dhB = currHeight - terrainHeight[iB] - waterHeight[iB];
+        slope[i] += Math.abs(dhB);
         flowB[i] += factor * dhB;
         if (flowB[i] < 0) flowB[i] = 0;
       }
@@ -151,9 +157,11 @@ function flowSimulationFlowFlux(timeStep: number) {
         flowT[i] = 0;
       } else {
         let dhT = currHeight - terrainHeight[iT] - waterHeight[iT];
+        slope[i] += Math.abs(dhT);
         flowT[i] += factor * dhT;
         if (flowT[i] < 0) flowT[i] = 0;
       }
+      slope[i] = slope[i] / (2 * (lw + lh) + slope[i]);
       let foTot = flowL[i] + flowR[i] + flowB[i] + flowT[i];
       if (foTot > 0) {
         let K = (waterHeight[i] * (lw * lh)) / timeStep / foTot;
@@ -240,8 +248,7 @@ function flowSimulationVelocityField() {
       if (tmpHeight[i] === 0) {
         velLR[i] = 0;
         velBT[i] = 0;
-      }
-      else {
+      } else {
         velLR[i] = dWw / (lw * tmpHeight[i]);
         velBT[i] = dWh / (lh * tmpHeight[i]);
       }
@@ -258,7 +265,7 @@ function erosionDeposition() {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
       let vel = Math.sqrt(velLR[i] ** 2 + velBT[i] ** 2);
-      let C = CAPACITY_CONSTANT * 0.5 * vel;
+      let C = CAPACITY_CONSTANT * slope[i] * vel;
       let s = sediment[i];
       if (C > s) {
         // Erosion
@@ -285,8 +292,8 @@ function sedimentTransport(timeStep: number) {
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
-      let dw = Math.round((2 * velLR[i] * timeStep) / lw);
-      let dh = Math.round((2 * velBT[i] * timeStep) / lh);
+      let dw = Math.round((velLR[i] * timeStep) / lw);
+      let dh = Math.round((velBT[i] * timeStep) / lh);
       let w_ = w - dw;
       let h_ = h - dh;
       if (w_ >= 0 && w_ < width && h_ >= 0 && h_ < height) {

@@ -8,6 +8,7 @@ import { initTerrain, renderTerrain, updateTerain } from "./terrain";
 import { mesh, removeMesh } from "./render";
 import { imageData } from "./util/image";
 import { setInteration } from "./interaction";
+import { CONST } from "./consts";
 
 const scene = new THREE.Scene();
 const setcolor = "#000000";
@@ -52,7 +53,8 @@ const ui = {
     initAll(stride);
   },
   timeStep: 13,
-  roughness: 1,
+  roughness: 0,
+  map: 0,
 };
 
 // ===================== GUI =====================
@@ -63,12 +65,17 @@ function initGUI() {
   gui.add(ui, "reset").name("Reset");
   gui.add(ui, "timeStep", 1, 100).step(1).name("Time Step");
   gui
-    .add(ui, "roughness", 1, 4)
+    .add(ui, "roughness", 0, 4)
     .step(1)
     .name("Roughness")
     .onChange((val) => {
       stride = 2 ** val;
     });
+  gui.add(ui, "map", { Hill: 0, SNU: 1, Mountain: 2 }).onChange((val) => {
+    ui.map = parseInt(val);
+  });
+  // const
+  gui.add(CONST, "RAINFALL_SIZE", 1 / 200, 1 / 10).name("Rainfall Size");
 }
 // ===================== MAIN =====================
 
@@ -96,7 +103,7 @@ async function main() {
 
 async function initAll(stride: number) {
   removeMesh(scene);
-  let terrain = await imageData();
+  let terrain = await imageData(ui.map);
   initTerrain(terrain, stride, scene);
   setInteration(camera, mesh);
 }
