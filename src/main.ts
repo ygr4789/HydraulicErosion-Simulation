@@ -5,8 +5,9 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 import "./style/style.css";
 import { initTerrain, renderTerrain, updateTerain } from "./terrain";
-import { removeMesh } from "./render";
+import { mesh, removeMesh } from "./render";
 import { imageData } from "./util/image";
+import { setInteration } from "./interaction";
 
 const scene = new THREE.Scene();
 const setcolor = "#000000";
@@ -51,7 +52,7 @@ const ui = {
     initAll(stride);
   },
   timeStep: 13,
-  roughness: 4,
+  roughness: 1,
 };
 
 // ===================== GUI =====================
@@ -71,7 +72,7 @@ function initGUI() {
 }
 // ===================== MAIN =====================
 
-let isPlaying: Boolean = false;
+let isPlaying: Boolean = true;
 let stride = 2 ** ui.roughness;
 
 async function main() {
@@ -97,6 +98,7 @@ async function initAll(stride: number) {
   removeMesh(scene);
   let terrain = await imageData();
   initTerrain(terrain, stride, scene);
+  setInteration(camera, mesh);
 }
 
 function updateStates(dt: number) {
