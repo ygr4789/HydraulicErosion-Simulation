@@ -1,6 +1,17 @@
 import { Scene } from "three";
 import { initMesh, renderMesh } from "./render";
-import { GRAVITY, PIPE_AREA, PIPE_LENGTH, TERRAIN_MAX_ALT, TERRAIN_SIZE } from "./consts";
+import {
+  CAPACITY_CONSTANT,
+  DEPOSITION_CONSTANT,
+  EROSION_CONSTANT,
+  EVAPORATION,
+  GRAVITY,
+  PIPE_AREA,
+  PIPE_LENGTH,
+  PRECIPITATION,
+  TERRAIN_MAX_ALT,
+  TERRAIN_SIZE,
+} from "./consts";
 
 let terrainHeight: Float32Array;
 let waterHeight: Float32Array;
@@ -14,7 +25,8 @@ let flowT: Float32Array;
 let velLR: Float32Array;
 let velBT: Float32Array;
 
-let sedment: Float32Array;
+let sediment: Float32Array;
+let tmpSediment: Float32Array;
 
 let width: number;
 let height: number;
@@ -50,7 +62,8 @@ export function initTerrain(imgData: ImageData, stride: number, scene: Scene) {
   velLR = new Float32Array(len);
   velBT = new Float32Array(len);
 
-  sedment = new Float32Array(len);
+  sediment = new Float32Array(len);
+  tmpSediment = new Float32Array(len);
 
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
@@ -74,13 +87,16 @@ export function updateTerain(timeStep: number) {
   flowSimulationFlowFlux(timeStep);
   flowSimulationWaterHeight(timeStep);
   flowSimulationVelocityField();
+  erosionDeposition();
+  sedimentTransport(timeStep);
+  evaporation(timeStep);
 }
 
 function waterIncrement(timeStep: number) {
-  waterHeight[indexOfArr(width / 2, height / 2, width)] += timeStep * 0.1;
-  waterHeight[indexOfArr(1 + width / 2, height / 2, width)] += timeStep * 0.1;
-  waterHeight[indexOfArr(width / 2, 1 + height / 2, width)] += timeStep * 0.1;
-  waterHeight[indexOfArr(1 + width / 2, 1 + height / 2, width)] += timeStep * 0.1;
+  waterHeight[indexOfArr(width / 2, height / 2, width)] += timeStep * PRECIPITATION;
+  waterHeight[indexOfArr(1 + width / 2, height / 2, width)] += timeStep * PRECIPITATION;
+  waterHeight[indexOfArr(width / 2, 1 + height / 2, width)] += timeStep * PRECIPITATION;
+  waterHeight[indexOfArr(1 + width / 2, 1 + height / 2, width)] += timeStep * PRECIPITATION;
 }
 
 function flowSimulationFlowFlux(timeStep: number) {
@@ -216,8 +232,73 @@ function flowSimulationVelocityField() {
   if (velBT.includes(NaN)) console.error("velBT includes NaN");
 }
 
-function erosionDeposition() {}
+function erosionDeposition() {
+  let Ks = EROSION_CONSTANT;
+  let Kd = DEPOSITION_CONSTANT;
+  for (let w = 0; w < width; w++) {
+    for (let h = 0; h < height; h++) {
+      let i = indexOfArr(w, h, width);
+      let vel = Math.sqrt(velLR[i] ** 2 + velBT[i] ** 2);
+      let C = CAPACITY_CONSTANT * 0.5 * vel;
+      let s = sediment[i];
+      if (C > s) {
+        // Erosion
+        terrainHeight[i] -= Ks * (C - s);
+        tmpSediment[i] += Ks * (C - s);
+      } else {
+        // Deposition
+        terrainHeight[i] += Kd * (s - C);
+        tmpSediment[i] -= Kd * (s - C);
+      }
+    }
+  }
+  if (terrainHeight.includes(NaN)) console.error("terrainHeight includes NaN");
+  if (tmpSediment.includes(NaN)) console.error("tmpSediment includes NaN");
+}
 
-function sedimentTransport(timeStep: number) {}
+function sedimentTransport(timeStep: number) {
+  let lw = TERRAIN_SIZE / width;
+  let lh = TERRAIN_SIZE / height;
+  let cw = [-1, 1, 0, 0];
+  let ch = [0, 0, -1, 1];
+  for (let w = 0; w < width; w++) {
+    for (let h = 0; h < height; h++) {
+      let i = indexOfArr(w, h, width);
+      let dw = Math.round((velLR[i] * timeStep) / lw);
+      let dh = Math.round((velBT[i] * timeStep) / lh);
+      let w_ = w + dw;
+      let h_ = h + dh;
+      if (w_ >= 0 && w_ < width && h_ >= 0 && h_ < height) {
+        let i_ = indexOfArr(w_, h_, width);
+        sediment[i] = tmpSediment[i_];
+      } else {
+        let cnt = 0;
+        let sum = 0;
+        for (let k = 0; k < 4; k++) {
+          let nw = w + cw[k];
+          let nh = h + ch[k];
+          if (nw >= 0 && nw < width && nh >= 0 && nh < height) {
+            let ni = indexOfArr(nw, nh, width);
+            cnt++;
+            sum += sediment[ni];
+          }
+        }
+        sediment[i] = sum;
+        if (cnt > 0) sediment[i] /= cnt;
+      }
+    }
+  }
+  if (sediment.includes(NaN)) console.error("tmpSediment includes NaN");
+}
 
-function evaporation(timeStep: number) {}
+function evaporation(timeStep: number) {
+  let factor = 1 - EVAPORATION * timeStep;
+  if (factor < 0) factor = 0;
+  for (let w = 0; w < width; w++) {
+    for (let h = 0; h < height; h++) {
+      let i = indexOfArr(w, h, width);
+      waterHeight[i] *= factor;
+    }
+  }
+  if (waterHeight.includes(NaN)) console.error("waterHeight includes NaN");
+}
