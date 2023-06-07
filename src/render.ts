@@ -63,10 +63,10 @@ export function initMesh(alt: Float32Array, width_: number, height_: number, sce
     wireframe: false,
   });
 
-  const material_ = new THREE.ShaderMaterial({
-    vertexShader: require("./shader/vertexShader.glsl"),
-    fragmentShader: require("./shader/fragmentShader.glsl"),
-  });
+  // const material_ = new THREE.ShaderMaterial({
+  //   vertexShader: require("./shader/vertexShader.glsl"),
+  //   fragmentShader: require("./shader/fragmentShader.glsl"),
+  // });
 
   mesh = new THREE.Mesh(geometry, material);
 
