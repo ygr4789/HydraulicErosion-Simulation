@@ -2,7 +2,6 @@ import { Scene } from "three";
 import { initMesh, renderMesh } from "./render";
 import {
   CAPACITY_CONSTANT,
-  CONST,
   DEPOSITION_CONSTANT,
   EPS,
   EROSION_CONSTANT,
@@ -15,6 +14,7 @@ import {
   TERRAIN_SIZE,
 } from "./consts";
 import { interactionState } from "./interaction";
+import { CONTROL } from "./control";
 
 let terrainHeight: Float32Array;
 let waterHeight: Float32Array;
@@ -92,8 +92,8 @@ export function updateTerain(timeStep: number) {
   flowSimulationFlowFlux(timeStep);
   flowSimulationWaterHeight(timeStep);
   flowSimulationVelocityField();
-  erosionDeposition();
-  sedimentTransport(timeStep);
+  if(CONTROL.EROSION_DEPOSITOIN_ON) erosionDeposition();
+  if(CONTROL.SEDIMENT_TRANSPORTATION_ON) sedimentTransport(timeStep);
   evaporation(timeStep);
 }
 
@@ -103,8 +103,8 @@ function waterIncrement(timeStep: number) {
   if (interactionValid) {
     let w = Math.round(IS.norW * (width - 1));
     let h = Math.round(IS.norH * (height - 1));
-    let dw = Math.round(width * CONST.RAINFALL_SIZE);
-    let dh = Math.round(height * CONST.RAINFALL_SIZE);
+    let dw = Math.round(width * CONTROL.RAINFALL_SIZE);
+    let dh = Math.round(height * CONTROL.RAINFALL_SIZE);
     for (let w_ = w - dw; w_ <= w + dw; w_++) {
       for (let h_ = h - dh; h_ <= h + dh; h_++) {
         if (w_ >= 0 && w_ < width && h_ >= 0 && h_ < height) {

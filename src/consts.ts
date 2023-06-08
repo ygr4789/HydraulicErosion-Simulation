@@ -1,7 +1,3 @@
-export const CONST = {
-  RAINFALL_SIZE: 1 / 50,
-};
-
 export const TERRAIN_SIZE = 30;
 export const TERRAIN_MAX_ALT = 10;
 

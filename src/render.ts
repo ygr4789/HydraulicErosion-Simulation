@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
+import { CONTROL } from "./control";
 
 export let mesh: THREE.Mesh;
 let positions: Float32Array;
@@ -74,6 +75,7 @@ export function initMesh(alt: Float32Array, width_: number, height_: number, sce
 }
 
 function altToColor(alt: number) {
+  if (!CONTROL.VISUALIZATION_ON) return 0.5;
   return 0.5 + alt / MAX_VISUZLIZE_WATER_HEIGHT;
 }
 
@@ -87,28 +89,28 @@ export function renderMesh(alt1: Float32Array, alt2: Float32Array, alt3: Float32
       let iv4 = indexOfArr(w + 1, h + 1, width);
       //upper tirangle
       // v1
-      positions[i * 3 + 1] = alt1[iv1] + alt2[iv1] //+ alt3[iv1];
+      positions[i * 3 + 1] = alt1[iv1] + alt2[iv1]; //+ alt3[iv1];
       colors[i * 3 + 2] = altToColor(alt2[iv1]);
       i++;
       // v2
-      positions[i * 3 + 1] = alt1[iv2] + alt2[iv2] //+ alt3[iv2];
+      positions[i * 3 + 1] = alt1[iv2] + alt2[iv2]; //+ alt3[iv2];
       colors[i * 3 + 2] = altToColor(alt2[iv2]);
       i++;
       // v3
-      positions[i * 3 + 1] = alt1[iv3] + alt2[iv3] //+ alt3[iv3];
+      positions[i * 3 + 1] = alt1[iv3] + alt2[iv3]; //+ alt3[iv3];
       colors[i * 3 + 2] = altToColor(alt2[iv3]);
       i++;
       //lower triangle
       // v2
-      positions[i * 3 + 1] = alt1[iv2] + alt2[iv2] //+ alt3[iv2];
+      positions[i * 3 + 1] = alt1[iv2] + alt2[iv2]; //+ alt3[iv2];
       colors[i * 3 + 2] = altToColor(alt2[iv2]);
       i++;
       // v4
-      positions[i * 3 + 1] = alt1[iv4] + alt2[iv4] //+ alt3[iv4];
+      positions[i * 3 + 1] = alt1[iv4] + alt2[iv4]; //+ alt3[iv4];
       colors[i * 3 + 2] = altToColor(alt2[iv4]);
       i++;
       // v3
-      positions[i * 3 + 1] = alt1[iv3] + alt2[iv3] //+ alt3[iv3];
+      positions[i * 3 + 1] = alt1[iv3] + alt2[iv3]; //+ alt3[iv3];
       colors[i * 3 + 2] = altToColor(alt2[iv3]);
       i++;
     }

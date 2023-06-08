@@ -8,7 +8,7 @@ import { initTerrain, renderTerrain, updateTerain } from "./terrain";
 import { mesh, removeMesh } from "./render";
 import { imageData } from "./util/image";
 import { setInteration } from "./interaction";
-import { CONST } from "./consts";
+import { CONTROL, addControlsOn } from "./control";
 
 const scene = new THREE.Scene();
 const setcolor = "#000000";
@@ -45,55 +45,38 @@ scene.add(dirLight);
 
 // ===================== Control =====================
 
-const ui = {
-  toggleUpdating: () => {
-    isPlaying = !isPlaying;
+const MAIN_UI = {
+  RUN_PAUSE: () => {
+    MAIN_UI.PAUSED = !MAIN_UI.PAUSED;
   },
-  reset: () => {
-    initAll(stride);
+  RESET: () => {
+    initAll(CONTROL.STRIDE);
   },
-  timeStep: 13,
-  roughness: 0,
-  map: 0,
+  PAUSED: false,
 };
 
 // ===================== GUI =====================
 
 function initGUI() {
   const gui = new dat.GUI();
-  gui.add(ui, "toggleUpdating").name("Run / Pause");
-  gui.add(ui, "reset").name("Reset");
-  gui.add(ui, "timeStep", 1, 100).step(1).name("Time Step");
-  gui
-    .add(ui, "roughness", 0, 4)
-    .step(1)
-    .name("Roughness")
-    .onChange((val) => {
-      stride = 2 ** val;
-    });
-  gui.add(ui, "map", { Hill: 0, SNU: 1, Mountain: 2 }).onChange((val) => {
-    ui.map = parseInt(val);
-  });
-  // const
-  gui.add(CONST, "RAINFALL_SIZE", 1 / 200, 1 / 10).name("Rainfall Size");
+  gui.add(MAIN_UI, "RUN_PAUSE").name("Run / Pause");
+  gui.add(MAIN_UI, "RESET").name("Reset");
+  addControlsOn(gui);
 }
 // ===================== MAIN =====================
-
-let isPlaying: Boolean = true;
-let stride = 2 ** ui.roughness;
 
 async function main() {
   const stats = new Stats();
   document.body.appendChild(stats.dom);
 
-  await initAll(stride);
+  await initAll(CONTROL.STRIDE);
 
   animate();
   function animate() {
     requestAnimationFrame(animate);
     stats.begin();
-    if (isPlaying) {
-      updateStates(ui.timeStep / 1000);
+    if (!MAIN_UI.PAUSED) {
+      updateStates(CONTROL.TIMESTEP / 1000);
       renderTerrain();
     }
     renderer.render(scene, camera);
@@ -103,7 +86,7 @@ async function main() {
 
 async function initAll(stride: number) {
   removeMesh(scene);
-  let terrain = await imageData(ui.map);
+  let terrain = await imageData(CONTROL.MAP);
   initTerrain(terrain, stride, scene);
   setInteration(camera, mesh);
 }
