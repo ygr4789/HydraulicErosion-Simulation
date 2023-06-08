@@ -15,4 +15,6 @@ export const DEPOSITION_CONSTANT = 0.1;
 export const PRECIPITATION = 1;
 export const EVAPORATION = 1;
 
+export const TALUS_TANGENT = 0.5;
+
 export const EPS = 0.001;

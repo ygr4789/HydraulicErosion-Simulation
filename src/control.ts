@@ -10,6 +10,7 @@ export const CONTROL = {
   VISUALIZATION_ON: true,
   EROSION_DEPOSITOIN_ON: true,
   SEDIMENT_TRANSPORTATION_ON: true,
+  MATERIAL_SLIPPAGE_ON: false,
 };
 
 export function addControlsOn(gui: GUI) {
@@ -29,4 +30,5 @@ export function addControlsOn(gui: GUI) {
   gui.add(CONTROL, "VISUALIZATION_ON").name("Visualization");
   gui.add(CONTROL, "EROSION_DEPOSITOIN_ON").name("Erosion / Deposition");
   gui.add(CONTROL, "SEDIMENT_TRANSPORTATION_ON").name("Sediment Transportation");
+  gui.add(CONTROL, "MATERIAL_SLIPPAGE_ON").name("Material Slippage");
 }
