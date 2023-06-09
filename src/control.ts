@@ -10,7 +10,7 @@ export const CONTROL = {
   VISUALIZATION_ON: true,
   EROSION_DEPOSITOIN_ON: true,
   SEDIMENT_TRANSPORTATION_ON: true,
-  MATERIAL_SLIPPAGE_ON: false,
+  MATERIAL_SLIPPAGE_ON: true,
 };
 
 export function addControlsOn(gui: GUI) {

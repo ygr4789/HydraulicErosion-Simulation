@@ -99,7 +99,7 @@ export function updateTerain(timeStep: number) {
   fluxSimulationVelocityField();
   if (CONTROL.EROSION_DEPOSITOIN_ON) erosionDeposition();
   if (CONTROL.SEDIMENT_TRANSPORTATION_ON) sedimentTransport(timeStep);
-  if(CONTROL.MATERIAL_SLIPPAGE_ON) materialSlippage(timeStep);
+  if (CONTROL.MATERIAL_SLIPPAGE_ON) materialSlippage(timeStep);
   evaporation(timeStep);
 }
 
@@ -135,6 +135,13 @@ function fluxSimulationfluxFlux(timeStep: number) {
       let iT = indexOfArr(w, h + 1, width);
       let currHeight = terrainHeight[i] + waterHeight[i];
       slope[i] = 0;
+      if(waterHeight[i] === 0) {
+        fluxL[i] = 0;
+        fluxR[i] = 0;
+        fluxB[i] = 0;
+        fluxT[i] = 0;
+        continue;
+      }
       if (w === 0) {
         fluxL[i] = 0;
       } else {
@@ -341,35 +348,36 @@ function materialSlippage(timeStep: number) {
       let currTerrainHeight = terrainHeight[i];
       slope[i] = 0;
       if(!(fluxL[i] || fluxR[i] || fluxB[i] || fluxT[i])) continue;
+      // if (!waterHeight[i]) continue;
       if (w !== 0) {
-        let dhL = currTerrainHeight - terrainHeight[iL];
-        if(dhL > lw_tana) {
+        let dhL = terrainHeight[iL] - currTerrainHeight;
+        if (dhL > lw_tana) {
           let dd = timeStep * (dhL - lw_tana);
-          terrainHeight[i] -= dd;
+          terrainHeight[i] += dd;
           slippage[iL] += dd;
         }
       }
       if (w !== width - 1) {
-        let dhR = currTerrainHeight - terrainHeight[iR];
-        if(dhR > lw_tana) {
+        let dhR = terrainHeight[iR] - currTerrainHeight;
+        if (dhR > lw_tana) {
           let dd = timeStep * (dhR - lw_tana);
-          terrainHeight[i] -= dd;
+          terrainHeight[i] += dd;
           slippage[iR] += dd;
         }
       }
       if (h !== 0) {
-        let dhB = currTerrainHeight - terrainHeight[iB];
-        if(dhB > lh_tana) {
+        let dhB = terrainHeight[iB] - currTerrainHeight;
+        if (dhB > lh_tana) {
           let dd = timeStep * (dhB - lh_tana);
-          terrainHeight[i] -= dd;
+          terrainHeight[i] += dd;
           slippage[iB] += dd;
         }
       }
       if (h !== height - 1) {
-        let dhT = currTerrainHeight - terrainHeight[iT];
-        if(dhT > lh_tana) {
+        let dhT = terrainHeight[iT] - currTerrainHeight;
+        if (dhT > lh_tana) {
           let dd = timeStep * (dhT - lh_tana);
-          terrainHeight[i] -= dd;
+          terrainHeight[i] += dd;
           slippage[iT] += dd;
         }
       }
@@ -378,7 +386,7 @@ function materialSlippage(timeStep: number) {
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
-      terrainHeight[i] += slippage[i];
+      terrainHeight[i] -= slippage[i];
     }
   }
 }
