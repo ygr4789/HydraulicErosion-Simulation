@@ -36,10 +36,7 @@ window.onresize = window_onsize;
 
 // ================ Light setting ================
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambientLight);
-
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+const dirLight = new THREE.DirectionalLight(0xffffff);
 dirLight.position.set(10, 10, 10);
 scene.add(dirLight);
 
@@ -71,6 +68,7 @@ async function main() {
 
   await initAll(CONTROL.STRIDE);
 
+  // renderer.render(scene, camera);
   animate();
   function animate() {
     requestAnimationFrame(animate);

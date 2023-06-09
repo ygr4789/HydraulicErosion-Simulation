@@ -278,7 +278,8 @@ function erosionDeposition() {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
       let vel = Math.sqrt(velLR[i] ** 2 + velBT[i] ** 2);
-      let C = CAPACITY_CONSTANT * slope[i] * vel;
+      let sina = Math.max(slope[i], 0.2);
+      let C = CAPACITY_CONSTANT * sina * vel;
       let s = sediment[i];
       if (C > s) {
         // Erosion

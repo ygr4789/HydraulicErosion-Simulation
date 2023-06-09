@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
 import { CONTROL } from "./control";
 
+const vertexShader = require("./shader/terrainVS.glsl");
+const fragmentShader = require("./shader/terrainFS.glsl");
+
 export let mesh: THREE.Mesh;
 let verticies: Float32Array;
 let colors: Float32Array;
@@ -67,12 +70,19 @@ export function initMesh(alt: Float32Array, width_: number, height_: number, sce
     wireframe: false,
   });
 
-  // const material_ = new THREE.ShaderMaterial({
-  //   vertexShader: require("./shader/vertexShader.glsl"),
-  //   fragmentShader: require("./shader/fragmentShader.glsl"),
-  // });
+  let posUniforms = {};
+  let lightUnifoms = THREE.UniformsLib["lights"];
+  let uniforms = THREE.UniformsUtils.merge([posUniforms, lightUnifoms]);
 
-  mesh = new THREE.Mesh(geometry, material);
+  const material_ = new THREE.ShaderMaterial({
+    vertexColors: true,
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    lights: true,
+    uniforms: uniforms,
+  });
+
+  mesh = new THREE.Mesh(geometry, material_);
 
   scene.add(mesh);
 }
