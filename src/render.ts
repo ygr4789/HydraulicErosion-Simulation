@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
+import { MAX_VISUZLIZE_SEIMENT_AMOUNT, MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
 import { CONTROL } from "./control";
 
 const vertexShader = require("./shader/terrainVS.glsl");
@@ -92,11 +92,17 @@ function altToColor(alt: number) {
   return 0.5 + alt / MAX_VISUZLIZE_WATER_HEIGHT;
 }
 
+function sedToColor(sed: number) {
+  if (!CONTROL.VISUALIZATION_ON) return 0.5;
+  return 0.5 + sed / MAX_VISUZLIZE_SEIMENT_AMOUNT;
+}
+
 export function renderMesh(alt1: Float32Array, alt2: Float32Array, alt3: Float32Array) {
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
       verticies[i * 3 + 1] = alt1[i] + alt2[i]; //+ alt3[iv1];
+      colors[i * 3] = sedToColor(alt3[i]);
       colors[i * 3 + 2] = altToColor(alt2[i]);
     }
   }

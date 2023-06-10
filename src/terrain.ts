@@ -2,6 +2,7 @@ import { Scene } from "three";
 import { initMesh, renderMesh } from "./render";
 import {
   CAPACITY_CONSTANT,
+  DAMPING,
   DEPOSITION_CONSTANT,
   EPS,
   EROSION_CONSTANT,
@@ -33,6 +34,7 @@ let slope: Float32Array;
 let sediment: Float32Array;
 let tmpSediment: Float32Array;
 
+let effected: Uint8Array;
 let slippage: Float32Array;
 
 let width: number;
@@ -73,6 +75,7 @@ export function initTerrain(imgData: ImageData, stride: number, scene: Scene) {
   sediment = new Float32Array(len);
   tmpSediment = new Float32Array(len);
 
+  effected = new Uint8Array(len);
   slippage = new Float32Array(len);
 
   for (let w = 0; w < width; w++) {
@@ -99,6 +102,7 @@ export function updateTerain(timeStep: number) {
   fluxSimulationVelocityField();
   if (CONTROL.EROSION_DEPOSITOIN_ON) erosionDeposition();
   if (CONTROL.SEDIMENT_TRANSPORTATION_ON) sedimentTransport(timeStep);
+
   if (CONTROL.MATERIAL_SLIPPAGE_ON) materialSlippage(timeStep);
   evaporation(timeStep);
 }
@@ -124,6 +128,7 @@ function waterIncrement(timeStep: number) {
 
 function fluxSimulationfluxFlux(timeStep: number) {
   let factor = (timeStep * PIPE_AREA * GRAVITY) / PIPE_LENGTH;
+  let D = PIPE_LENGTH * DAMPING * timeStep;
   let lw = TERRAIN_SIZE / width;
   let lh = TERRAIN_SIZE / height;
   for (let w = 0; w < width; w++) {
@@ -135,7 +140,7 @@ function fluxSimulationfluxFlux(timeStep: number) {
       let iT = indexOfArr(w, h + 1, width);
       let currHeight = terrainHeight[i] + waterHeight[i];
       slope[i] = 0;
-      if(waterHeight[i] === 0) {
+      if (waterHeight[i] === 0) {
         fluxL[i] = 0;
         fluxR[i] = 0;
         fluxB[i] = 0;
@@ -147,6 +152,7 @@ function fluxSimulationfluxFlux(timeStep: number) {
       } else {
         let dhL = currHeight - terrainHeight[iL] - waterHeight[iL];
         slope[i] += Math.abs(dhL);
+        fluxL[i] *= 1 - D * timeStep;
         fluxL[i] += factor * dhL;
         if (fluxL[i] < 0) fluxL[i] = 0;
       }
@@ -155,6 +161,7 @@ function fluxSimulationfluxFlux(timeStep: number) {
       } else {
         let dhR = currHeight - terrainHeight[iR] - waterHeight[iR];
         slope[i] += Math.abs(dhR);
+        fluxR[i] *= 1 - D * timeStep;
         fluxR[i] += factor * dhR;
         if (fluxR[i] < 0) fluxR[i] = 0;
       }
@@ -163,6 +170,7 @@ function fluxSimulationfluxFlux(timeStep: number) {
       } else {
         let dhB = currHeight - terrainHeight[iB] - waterHeight[iB];
         slope[i] += Math.abs(dhB);
+        fluxB[i] *= 1 - D * timeStep;
         fluxB[i] += factor * dhB;
         if (fluxB[i] < 0) fluxB[i] = 0;
       }
@@ -171,6 +179,7 @@ function fluxSimulationfluxFlux(timeStep: number) {
       } else {
         let dhT = currHeight - terrainHeight[iT] - waterHeight[iT];
         slope[i] += Math.abs(dhT);
+        fluxT[i] *= 1 - D * timeStep;
         fluxT[i] += factor * dhT;
         if (fluxT[i] < 0) fluxT[i] = 0;
       }
@@ -279,7 +288,9 @@ function erosionDeposition() {
       let i = indexOfArr(w, h, width);
       let vel = Math.sqrt(velLR[i] ** 2 + velBT[i] ** 2);
       let sina = Math.max(slope[i], 0.2);
-      let C = CAPACITY_CONSTANT * sina * vel;
+      let C = CAPACITY_CONSTANT * Math.min(sina, 0.5) * vel;
+      if(C !== 0) effected[i] = 1;
+      C *= waterHeight[i];
       let s = sediment[i];
       if (C > s) {
         // Erosion
@@ -301,8 +312,6 @@ function erosionDeposition() {
 function sedimentTransport(timeStep: number) {
   let lw = TERRAIN_SIZE / width;
   let lh = TERRAIN_SIZE / height;
-  let cw = [-1, 1, 0, 0];
-  let ch = [0, 0, -1, 1];
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
@@ -313,20 +322,6 @@ function sedimentTransport(timeStep: number) {
       if (w_ >= 0 && w_ < width && h_ >= 0 && h_ < height) {
         let i_ = indexOfArr(w_, h_, width);
         sediment[i] = tmpSediment[i_];
-      } else {
-        let cnt = 0;
-        let sum = 0;
-        for (let k = 0; k < 4; k++) {
-          let nw = w + cw[k];
-          let nh = h + ch[k];
-          if (nw >= 0 && nw < width && nh >= 0 && nh < height) {
-            let ni = indexOfArr(nw, nh, width);
-            cnt++;
-            sum += sediment[ni];
-          }
-        }
-        sediment[i] = sum;
-        if (cnt > 0) sediment[i] /= cnt;
       }
     }
   }
@@ -348,8 +343,7 @@ function materialSlippage(timeStep: number) {
       let iT = indexOfArr(w, h + 1, width);
       let currTerrainHeight = terrainHeight[i];
       slope[i] = 0;
-      if(!(fluxL[i] || fluxR[i] || fluxB[i] || fluxT[i])) continue;
-      // if (!waterHeight[i]) continue;
+      if(!effected[i]) continue;
       if (w !== 0) {
         let dhL = terrainHeight[iL] - currTerrainHeight;
         if (dhL > lw_tana) {
@@ -388,6 +382,8 @@ function materialSlippage(timeStep: number) {
     for (let h = 0; h < height; h++) {
       let i = indexOfArr(w, h, width);
       terrainHeight[i] -= slippage[i];
+      effected[i] = 0;
+      if(slippage[i] > 0) effected[i] = 1;
     }
   }
 }
