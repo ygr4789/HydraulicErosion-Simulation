@@ -7,7 +7,8 @@ import "./style/style.css";
 import { initTerrain, updateTerain } from "./terrain";
 import { imageData } from "./util/image";
 import { setInteration } from "./interaction";
-import { CONTROL, addControlsOn } from "./control";
+import { CONTROL, initControlsGUI } from "./control";
+import { initConstsGUI } from "./consts";
 
 const scene = new THREE.Scene();
 const setcolor = "#000000";
@@ -46,7 +47,7 @@ const MAIN_UI = {
     MAIN_UI.PAUSED = !MAIN_UI.PAUSED;
   },
   RESET: () => {
-    initAll(CONTROL.STRIDE);
+    initAll(CONTROL.RESOLUTION);
   },
   PAUSED: false,
 };
@@ -57,7 +58,8 @@ function initGUI() {
   const gui = new dat.GUI();
   gui.add(MAIN_UI, "RUN_PAUSE").name("Run / Pause");
   gui.add(MAIN_UI, "RESET").name("Reset");
-  addControlsOn(gui);
+  initControlsGUI(gui);
+  initConstsGUI(gui);
 }
 // ===================== MAIN =====================
 
@@ -65,9 +67,8 @@ async function main() {
   const stats = new Stats();
   document.body.appendChild(stats.dom);
 
-  await initAll(CONTROL.STRIDE);
+  await initAll(CONTROL.RESOLUTION);
 
-  // renderer.render(scene, camera);
   animate();
   function animate() {
     requestAnimationFrame(animate);
@@ -80,9 +81,9 @@ async function main() {
   }
 }
 
-async function initAll(stride: number) {
+async function initAll(resolution: number) {
   let terrain = await imageData(CONTROL.MAP);
-  initTerrain(terrain, stride, scene, renderer);
+  initTerrain(terrain, resolution, scene, renderer);
   setInteration(camera);
 }
 

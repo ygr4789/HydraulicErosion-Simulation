@@ -2,20 +2,7 @@ import * as THREE from "three";
 import { CONTROL } from "./control";
 
 import { interactionState } from "./interaction";
-import {
-  CAPACITY_CONSTANT,
-  DAMPING,
-  DEPOSITION_CONSTANT,
-  EPS,
-  EROSION_CONSTANT,
-  EVAPORATION,
-  GRAVITY,
-  PIPE_AREA,
-  PIPE_LENGTH,
-  TALUS_TANGENT,
-  TERRAIN_SIZE,
-} from "./consts";
-import { PRECIPITATION } from "./consts";
+import { CONST, EPS, TERRAIN_SIZE } from "./consts";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer";
 
 export let outputTexture: THREE.Texture;
@@ -95,17 +82,17 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   waterIncreamentUniform.u_active = { value: interactionState.isActive };
   waterIncreamentUniform.u_timestep = { value: CONTROL.TIMESTEP };
   waterIncreamentUniform.u_radius = { value: CONTROL.RAINFALL_SIZE };
-  waterIncreamentUniform.u_arriv = { value: PRECIPITATION };
+  waterIncreamentUniform.u_arriv = { value: CONST.PRECIPITATION };
   waterIncreamentUniform.u_source = { value: [0.5, 0.5] };
 
   fluxSimFluxUniform = fluxSimFlux.uniforms;
   fluxSimFluxUniform.tex_h1 = { value: h1RenderTarget.texture };
   fluxSimFluxUniform.tex_flux = { value: fluxRenderTarget.texture };
   fluxSimFluxUniform.u_timestep = { value: CONTROL.TIMESTEP };
-  fluxSimFluxUniform.u_gravity = { value: GRAVITY };
-  fluxSimFluxUniform.u_damping = { value: DAMPING };
-  fluxSimFluxUniform.u_pipeLength = { value: PIPE_LENGTH };
-  fluxSimFluxUniform.u_pipeArea = { value: PIPE_AREA };
+  fluxSimFluxUniform.u_gravity = { value: CONST.GRAVITY };
+  fluxSimFluxUniform.u_damping = { value: CONST.DAMPING };
+  fluxSimFluxUniform.u_pipeLength = { value: CONST.PIPE_LENGTH };
+  fluxSimFluxUniform.u_pipeArea = { value: CONST.PIPE_AREA };
   fluxSimFluxUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
   fluxSimFluxUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   fluxSimFluxUniform.u_div = { value: [1 / width, 1 / height] };
@@ -129,9 +116,9 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   erosionUniform = erosion.uniforms;
   erosionUniform.tex_h2 = { value: h2RenderTarget.texture };
   erosionUniform.tex_vel = { value: velRenderTarget.texture };
-  erosionUniform.u_erosion = { value: EROSION_CONSTANT };
-  erosionUniform.u_depsition = { value: DEPOSITION_CONSTANT };
-  erosionUniform.u_capacity = { value: CAPACITY_CONSTANT };
+  erosionUniform.u_erosion = { value: CONST.EROSION_CONSTANT };
+  erosionUniform.u_depsition = { value: CONST.DEPOSITION_CONSTANT };
+  erosionUniform.u_capacity = { value: CONST.CAPACITY_CONSTANT };
   erosionUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
   erosionUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   erosionUniform.u_div = { value: [1 / width, 1 / height] };
@@ -147,7 +134,7 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   slippageFluxUniform = slippageFlux.uniforms;
   slippageFluxUniform.tex_h2 = {value: h2RenderTarget.texture};
   slippageFluxUniform.u_timestep = { value: CONTROL.TIMESTEP };
-  slippageFluxUniform.u_talusTangent = { value: TALUS_TANGENT };
+  slippageFluxUniform.u_talusTangent = { value: CONST.TALUS_TANGENT };
   slippageFluxUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
   slippageFluxUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   slippageFluxUniform.u_div = { value: [1 / width, 1 / height] };
@@ -160,7 +147,7 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   evaporationUniform = evaporation.uniforms;
   evaporationUniform.tex_h2 = { value: tmpTarget.texture };
   evaporationUniform.u_timestep = { value: CONTROL.TIMESTEP };
-  evaporationUniform.u_evaporation = { value: EVAPORATION };
+  evaporationUniform.u_evaporation = { value: CONST.EVAPORATION };
   evaporationUniform.u_epsilon = { value: EPS };
   evaporationUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
   evaporationUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
@@ -178,7 +165,20 @@ export function computeTextures() {
   fluxSimFluxUniform.u_timestep.value = CONTROL.TIMESTEP;
   fluxSimHeightUniform.u_timestep.value = CONTROL.TIMESTEP;
   sedimentUniform.u_timestep.value = CONTROL.TIMESTEP;
+  slippageFluxUniform.u_timestep.value = CONTROL.TIMESTEP;
   evaporationUniform.u_timestep.value = CONTROL.TIMESTEP;
+  
+  waterIncreamentUniform.u_arriv.value= CONST.PRECIPITATION ;
+  fluxSimFluxUniform.u_gravity.value= CONST.GRAVITY ;
+  fluxSimFluxUniform.u_damping.value= CONST.DAMPING ;
+  fluxSimFluxUniform.u_pipeLength.value= CONST.PIPE_LENGTH ;
+  fluxSimFluxUniform.u_pipeArea.value= CONST.PIPE_AREA ;
+  erosionUniform.u_erosion.value= CONST.EROSION_CONSTANT ;
+  erosionUniform.u_depsition.value= CONST.DEPOSITION_CONSTANT ;
+  erosionUniform.u_capacity.value= CONST.CAPACITY_CONSTANT ;
+  slippageFluxUniform.u_talusTangent.value= CONST.TALUS_TANGENT ;
+  evaporationUniform.u_evaporation.value= CONST.EVAPORATION ;
+
 
   gpuCompute.doRenderTarget(waterIncreament, h1RenderTarget);
   gpuCompute.doRenderTarget(fluxSimFlux, tmpTarget);
@@ -213,6 +213,6 @@ function fillHeightTexture(texture: THREE.DataTexture, alt: Float32Array) {
     theArray[k + 0] = alt[k / 4];
     theArray[k + 1] = 0;
     theArray[k + 2] = 0;
-    theArray[k + 3] = 1;
+    theArray[k + 3] = 0;
   }
 }

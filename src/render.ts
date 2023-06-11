@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { TERRAIN_SIZE } from "./consts";
+import { MAX_VISUZLIZE_SEIMENT_AMOUNT, MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
 import { outputTexture } from "./gpgpu";
 
 const vertexShader = require("./shader/terrainVS.glsl");
@@ -71,6 +71,8 @@ export function initMesh(width_: number, height_: number, scene: THREE.Scene) {
     u_cellWidth: { value: size / width },
     u_cellHeight: { value: size / height },
     u_div: { value: [1 / width, 1 / height] },
+    u_vis_d: { value: MAX_VISUZLIZE_WATER_HEIGHT },
+    u_vis_s: { value: MAX_VISUZLIZE_SEIMENT_AMOUNT },
   };
   let lightUnifoms = THREE.UniformsLib["lights"];
   uniforms = THREE.UniformsUtils.merge([geoUniforms, lightUnifoms]);

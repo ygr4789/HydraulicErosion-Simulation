@@ -15,11 +15,12 @@ function indexOfArr(x: number, y: number, width: number) {
   return x * width + y;
 }
 
-export function initTerrain(imgData: ImageData, stride: number, scene: Scene, renderer: WebGLRenderer) {
+export function initTerrain(imgData: ImageData, resolution: number, scene: Scene, renderer: WebGLRenderer) {
   removeComputeRenderer();
   removeMesh(scene);
   let imgWidth = imgData.width;
   let imgHeight = imgData.height;
+  let stride = imgHeight / resolution;
   width = Math.floor(imgWidth / stride);
   height = Math.floor(imgHeight / stride);
 
@@ -29,12 +30,16 @@ export function initTerrain(imgData: ImageData, stride: number, scene: Scene, re
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       let sum = 0;
+      let cnt = 0;
       for (let sw = w * stride; sw < (w + 1) * stride; sw++) {
         for (let sh = h * stride; sh < (h + 1) * stride; sh++) {
-          sum += imgData.data[indexOfImg(sw, sh, imgWidth)];
+          let sw_ = Math.floor(sw);
+          let sh_ = Math.floor(sh);
+          sum += imgData.data[indexOfImg(sw_, sh_, imgWidth)];
+          cnt ++;
         }
       }
-      sum /= 255 * stride ** 2;
+      sum /= 255 * cnt;
       sum *= TERRAIN_MAX_ALT;
       terrainHeight[indexOfArr(w, h, width)] = sum;
     }

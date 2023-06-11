@@ -4,6 +4,8 @@ uniform sampler2D tex_alt;
 uniform float u_cellWidth;
 uniform float u_cellHeight;
 uniform vec2 u_div;
+uniform float u_vis_d;
+uniform float u_vis_s;
 
 varying vec3 vNormal;
 varying vec3 vColor;
@@ -32,7 +34,7 @@ void main() {
     float s = H.z;
     
     vNormal = normalMatrix * n;
-    vColor = vec3(0.5 + s, 0.5, 0.5 + d);
+    vColor = vec3(1.f + s / u_vis_s, 1.f, 1.f + d / u_vis_d) * 0.5;
     
     vec4 vPosition = vec4(position.x, b + d, position.z, 1.0);
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
