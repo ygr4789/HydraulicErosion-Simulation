@@ -4,8 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 import "./style/style.css";
-import { initTerrain, renderTerrain, updateTerain } from "./terrain";
-import { mesh, removeMesh } from "./render";
+import { initTerrain, updateTerain } from "./terrain";
 import { imageData } from "./util/image";
 import { setInteration } from "./interaction";
 import { CONTROL, addControlsOn } from "./control";
@@ -74,8 +73,7 @@ async function main() {
     requestAnimationFrame(animate);
     stats.begin();
     if (!MAIN_UI.PAUSED) {
-      updateStates(CONTROL.TIMESTEP / 1000);
-      renderTerrain();
+      updateStates();
     }
     renderer.render(scene, camera);
     stats.end();
@@ -83,14 +81,13 @@ async function main() {
 }
 
 async function initAll(stride: number) {
-  removeMesh(scene);
   let terrain = await imageData(CONTROL.MAP);
-  initTerrain(terrain, stride, scene);
-  setInteration(camera, mesh);
+  initTerrain(terrain, stride, scene, renderer);
+  setInteration(camera);
 }
 
-function updateStates(dt: number) {
-  updateTerain(dt);
+function updateStates() {
+  updateTerain();
 }
 
 function preventDefault() {

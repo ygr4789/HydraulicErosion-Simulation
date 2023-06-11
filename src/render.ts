@@ -1,24 +1,26 @@
 import * as THREE from "three";
-import { MAX_VISUZLIZE_SEIMENT_AMOUNT, MAX_VISUZLIZE_WATER_HEIGHT, TERRAIN_SIZE } from "./consts";
-import { CONTROL } from "./control";
+import { TERRAIN_SIZE } from "./consts";
+import { outputTexture } from "./gpgpu";
 
 const vertexShader = require("./shader/terrainVS.glsl");
 const fragmentShader = require("./shader/terrainFS.glsl");
 
-export let mesh: THREE.Mesh;
+let mesh: THREE.Mesh;
 let verticies: Float32Array;
-let colors: Float32Array;
+let reference: Float32Array;
 let width: number;
 let height: number;
+
+let uniforms: any;
 
 function indexOfArr(x: number, y: number, width: number) {
   return x * width + y;
 }
 
-export function initMesh(alt: Float32Array, width_: number, height_: number, scene: THREE.Scene) {
+export function initMesh(width_: number, height_: number, scene: THREE.Scene) {
   let size = TERRAIN_SIZE;
   let pos = [];
-  let col = [];
+  let ref = [];
   let indicies = [];
   width = width_;
   height = height_;
@@ -26,16 +28,18 @@ export function initMesh(alt: Float32Array, width_: number, height_: number, sce
   for (let w = 0; w < width; w++) {
     for (let h = 0; h < height; h++) {
       pos.push(size * (-0.5 + h / height));
-      pos.push(alt[indexOfArr(w, h, width)]);
+      pos.push(0);
       pos.push(size * (-0.5 + w / width));
+      ref.push(w / width);
+      ref.push(h / height);
     }
   }
 
   for (let w = 0; w < width - 1; w++) {
     for (let h = 0; h < height - 1; h++) {
-      // 1-2
-      // |/|
-      // 3-4
+      // 1 - 2
+      // | / |
+      // 3 - 4
       //upper tirangle
       // v1
       indicies.push(indexOfArr(w, h, width));
@@ -53,63 +57,34 @@ export function initMesh(alt: Float32Array, width_: number, height_: number, sce
     }
   }
 
-  col = new Array(pos.length);
-  col.fill(0.5);
-
   verticies = new Float32Array(pos);
-  colors = new Float32Array(col);
+  reference = new Float32Array(ref);
 
   const geometry = new THREE.BufferGeometry();
   geometry.setIndex(indicies);
   geometry.setAttribute("position", new THREE.BufferAttribute(verticies, 3));
-  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute("reference", new THREE.BufferAttribute(reference, 2));
   geometry.computeVertexNormals();
-  const material = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 1,
-    wireframe: false,
-  });
 
-  let posUniforms = {};
+  let posUniforms = { texturePosition: { value: null } };
   let lightUnifoms = THREE.UniformsLib["lights"];
-  let uniforms = THREE.UniformsUtils.merge([posUniforms, lightUnifoms]);
+  uniforms = THREE.UniformsUtils.merge([posUniforms, lightUnifoms]);
 
-  const material_ = new THREE.ShaderMaterial({
+  const material = new THREE.ShaderMaterial({
     vertexColors: true,
     vertexShader: vertexShader,
     fragmentShader: fragmentShader,
     lights: true,
     uniforms: uniforms,
+    wireframe: true,
   });
 
-  mesh = new THREE.Mesh(geometry, material_);
-
+  mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 }
 
-function altToColor(alt: number) {
-  if (!CONTROL.VISUALIZATION_ON) return 0.5;
-  return 0.5 + alt / MAX_VISUZLIZE_WATER_HEIGHT;
-}
-
-function sedToColor(sed: number) {
-  if (!CONTROL.VISUALIZATION_ON) return 0.5;
-  return 0.5 + sed / MAX_VISUZLIZE_SEIMENT_AMOUNT;
-}
-
-export function renderMesh(alt1: Float32Array, alt2: Float32Array, alt3: Float32Array) {
-  for (let w = 0; w < width; w++) {
-    for (let h = 0; h < height; h++) {
-      let i = indexOfArr(w, h, width);
-      verticies[i * 3 + 1] = alt1[i] + alt2[i]; //+ alt3[iv1];
-      colors[i * 3] = sedToColor(alt3[i]);
-      colors[i * 3 + 2] = altToColor(alt2[i]);
-    }
-  }
-  mesh.geometry.computeVertexNormals();
-  mesh.geometry.attributes.position.needsUpdate = true;
-  mesh.geometry.attributes.color.needsUpdate = true;
-  mesh.geometry.computeBoundingSphere();
+export function updateMesh() {
+  uniforms.texturePosition.value = outputTexture;
 }
 
 export function removeMesh(scene: THREE.Scene) {

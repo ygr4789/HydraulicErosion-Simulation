@@ -8,7 +8,7 @@ export const PIPE_AREA = 10;
 export const PIPE_LENGTH = 1;
 
 export const GRAVITY = 1;
-export const DAMPING = 10;
+export const DAMPING = 1;
 
 export const CAPACITY_CONSTANT = 0.1;
 export const EROSION_CONSTANT = 0.1;
