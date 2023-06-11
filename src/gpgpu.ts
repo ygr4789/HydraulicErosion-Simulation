@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { CONTROL } from "./control";
 
 import { interactionState } from "./interaction";
-import { DAMPING, GRAVITY, PIPE_AREA, PIPE_LENGTH, TERRAIN_SIZE } from "./consts";
+import { CAPACITY_CONSTANT, DAMPING, DEPOSITION_CONSTANT, EROSION_CONSTANT, GRAVITY, PIPE_AREA, PIPE_LENGTH, TERRAIN_SIZE } from "./consts";
 import { PRECIPITATION } from "./consts";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer";
 
@@ -15,14 +15,20 @@ let height: number;
 let waterIncreamentUniform: { [uniform: string]: THREE.IUniform<any> };
 let fluxSimFluxUniform: { [uniform: string]: THREE.IUniform<any> };
 let fluxSimHeightUniform: { [uniform: string]: THREE.IUniform<any> };
+let fluxSimVelocityUniform: { [uniform: string]: THREE.IUniform<any> };
+let erosionUniform: { [uniform: string]: THREE.IUniform<any> };
 
 let waterIncreament: THREE.ShaderMaterial;
 let fluxSimFlux: THREE.ShaderMaterial;
 let fluxSimHeight: THREE.ShaderMaterial;
+let fluxSimVelocity: THREE.ShaderMaterial;
+let erosion: THREE.ShaderMaterial;
 
 let h1RenderTarget: THREE.WebGLRenderTarget;
 let fluxRenderTarget: THREE.WebGLRenderTarget;
 let h2RenderTarget: THREE.WebGLRenderTarget;
+let velRenderTarget: THREE.WebGLRenderTarget;
+
 let tmpTarget: THREE.WebGLRenderTarget;
 
 export function initComputeRenderer(width_: number, height_: number, alt: Float32Array, renderer: THREE.WebGLRenderer) {
@@ -31,27 +37,30 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   gpuCompute = new GPUComputationRenderer(width, height, renderer);
 
   let altTexture = gpuCompute.createTexture();
-  let altfTexture = gpuCompute.createTexture();
   fillHeightTexture(altTexture, alt);
 
   let waterIncreamentShader = require("./shader/waterIncreament.glsl");
   let fluxSimFluxShader = require("./shader/fluxSimFlux.glsl");
   let fluxSimHeightShader = require("./shader/fluxSimHeight.glsl");
+  let fluxSimVelocityShader = require("./shader/fluxSimVelocity.glsl");
+  let erosionShader = require("./shader/erosion.glsl");
 
   waterIncreament = gpuCompute.createShaderMaterial(waterIncreamentShader);
   fluxSimFlux = gpuCompute.createShaderMaterial(fluxSimFluxShader);
   fluxSimHeight = gpuCompute.createShaderMaterial(fluxSimHeightShader);
+  fluxSimVelocity = gpuCompute.createShaderMaterial(fluxSimVelocityShader);
+  erosion = gpuCompute.createShaderMaterial(erosionShader);
 
   h1RenderTarget = newRenderTarget(gpuCompute);
-  fluxRenderTarget = newRenderTarget(gpuCompute);
   h2RenderTarget = newRenderTarget(gpuCompute);
+  fluxRenderTarget = newRenderTarget(gpuCompute);
+  velRenderTarget = newRenderTarget(gpuCompute);
   tmpTarget = newRenderTarget(gpuCompute);
 
   gpuCompute.renderTexture(altTexture, h1RenderTarget);
   gpuCompute.renderTexture(altTexture, h2RenderTarget);
 
   waterIncreamentUniform = waterIncreament.uniforms;
-  waterIncreamentUniform.tex_h1 = { value: h1RenderTarget.texture };
   waterIncreamentUniform.tex_h2 = { value: h2RenderTarget.texture };
   waterIncreamentUniform.u_active = { value: interactionState.isActive };
   waterIncreamentUniform.u_timestep = { value: CONTROL.TIMESTEP };
@@ -79,6 +88,21 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   fluxSimHeightUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   fluxSimHeightUniform.u_div = { value: [1 / width, 1 / height] };
 
+  fluxSimVelocityUniform = fluxSimVelocity.uniforms;
+  fluxSimVelocityUniform.tex_h1 = { value: h1RenderTarget.texture };
+  fluxSimVelocityUniform.tex_h2 = { value: h2RenderTarget.texture };
+  fluxSimVelocityUniform.tex_flux = { value: fluxRenderTarget.texture };
+  fluxSimVelocityUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
+  fluxSimVelocityUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
+  fluxSimVelocityUniform.u_div = { value: [1 / width, 1 / height] };
+
+  erosionUniform = erosion.uniforms;
+  erosionUniform.tex_h2 = {value: h2RenderTarget.texture};
+  erosionUniform.tex_vel = {value: velRenderTarget.texture};
+  erosionUniform.u_erosion = {value: EROSION_CONSTANT};
+  erosionUniform.u_depsition = {value: DEPOSITION_CONSTANT};
+  erosionUniform.u_capacity = {value: CAPACITY_CONSTANT};
+
   outputTexture = h1RenderTarget.texture;
 }
 
@@ -87,10 +111,17 @@ export function computeTextures() {
   waterIncreamentUniform.u_radius.value = CONTROL.RAINFALL_SIZE;
   waterIncreamentUniform.u_source.value = [interactionState.norW, interactionState.norH];
 
+  waterIncreamentUniform.u_timestep.value = CONTROL.TIMESTEP;
+  fluxSimFluxUniform.u_timestep.value = CONTROL.TIMESTEP;
+  fluxSimHeightUniform.u_timestep.value = CONTROL.TIMESTEP;
+
   gpuCompute.doRenderTarget(waterIncreament, h1RenderTarget);
   gpuCompute.doRenderTarget(fluxSimFlux, tmpTarget);
   gpuCompute.renderTexture(tmpTarget.texture, fluxRenderTarget);
   gpuCompute.doRenderTarget(fluxSimHeight, h2RenderTarget);
+  gpuCompute.doRenderTarget(fluxSimVelocity, velRenderTarget);
+  gpuCompute.doRenderTarget(erosion, tmpTarget);
+  gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
 }
 
 export function removeComputeRenderer() {

@@ -12,7 +12,7 @@ void main() {
     float b = heightPixel.x;
     float d = heightPixel.y;
     float s = heightPixel.z;
-    vColor = vec3(0.5, 0.5, 0.5 + d);
+    vColor = vec3(0.5 + s, 0.5, 0.5 + d);
     vec4 vPosition = vec4(position.x, b + d, position.z, 1.0);
     
     gl_Position = projectionMatrix * modelViewMatrix * vPosition; 
