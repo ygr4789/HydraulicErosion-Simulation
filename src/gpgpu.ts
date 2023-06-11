@@ -12,6 +12,7 @@ import {
   GRAVITY,
   PIPE_AREA,
   PIPE_LENGTH,
+  TALUS_TANGENT,
   TERRAIN_SIZE,
 } from "./consts";
 import { PRECIPITATION } from "./consts";
@@ -30,6 +31,8 @@ let fluxSimVelocityUniform: { [uniform: string]: THREE.IUniform<any> };
 let erosionUniform: { [uniform: string]: THREE.IUniform<any> };
 let sedimentUniform: { [uniform: string]: THREE.IUniform<any> };
 let evaporationUniform: { [uniform: string]: THREE.IUniform<any> };
+let slippageFluxUniform: { [uniform: string]: THREE.IUniform<any> };
+let slippageApplyUniform: { [uniform: string]: THREE.IUniform<any> };
 
 let waterIncreament: THREE.ShaderMaterial;
 let fluxSimFlux: THREE.ShaderMaterial;
@@ -38,11 +41,14 @@ let fluxSimVelocity: THREE.ShaderMaterial;
 let erosion: THREE.ShaderMaterial;
 let sediment: THREE.ShaderMaterial;
 let evaporation: THREE.ShaderMaterial;
+let slippageFlux: THREE.ShaderMaterial;
+let slippageApply: THREE.ShaderMaterial;
 
 let h1RenderTarget: THREE.WebGLRenderTarget;
 let h2RenderTarget: THREE.WebGLRenderTarget;
 let fluxRenderTarget: THREE.WebGLRenderTarget;
 let velRenderTarget: THREE.WebGLRenderTarget;
+let slipRenderTarget: THREE.WebGLRenderTarget;
 
 let tmpTarget: THREE.WebGLRenderTarget;
 
@@ -61,6 +67,8 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   let erosionShader = require("./shader/erosion.glsl");
   let sedimentShader = require("./shader/sediment.glsl");
   let evaporationShader = require("./shader/evaporation.glsl");
+  let slippageFluxShader = require("./shader/slippageFlux.glsl");
+  let slippageApplyShader = require("./shader/slippageApply.glsl");
 
   waterIncreament = gpuCompute.createShaderMaterial(waterIncreamentShader);
   fluxSimFlux = gpuCompute.createShaderMaterial(fluxSimFluxShader);
@@ -69,11 +77,14 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   erosion = gpuCompute.createShaderMaterial(erosionShader);
   sediment = gpuCompute.createShaderMaterial(sedimentShader);
   evaporation = gpuCompute.createShaderMaterial(evaporationShader);
+  slippageFlux = gpuCompute.createShaderMaterial(slippageFluxShader);
+  slippageApply = gpuCompute.createShaderMaterial(slippageApplyShader);
 
   h1RenderTarget = newRenderTarget(gpuCompute);
   h2RenderTarget = newRenderTarget(gpuCompute);
   fluxRenderTarget = newRenderTarget(gpuCompute);
   velRenderTarget = newRenderTarget(gpuCompute);
+  slipRenderTarget = newRenderTarget(gpuCompute);
   tmpTarget = newRenderTarget(gpuCompute);
 
   gpuCompute.renderTexture(altTexture, h1RenderTarget);
@@ -121,6 +132,9 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   erosionUniform.u_erosion = { value: EROSION_CONSTANT };
   erosionUniform.u_depsition = { value: DEPOSITION_CONSTANT };
   erosionUniform.u_capacity = { value: CAPACITY_CONSTANT };
+  erosionUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
+  erosionUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
+  erosionUniform.u_div = { value: [1 / width, 1 / height] };
 
   sedimentUniform = sediment.uniforms;
   sedimentUniform.tex_h2 = { value: tmpTarget.texture };
@@ -130,11 +144,27 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   sedimentUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   sedimentUniform.u_div = { value: [1 / width, 1 / height] };
 
+  slippageFluxUniform = slippageFlux.uniforms;
+  slippageFluxUniform.tex_h2 = {value: h2RenderTarget.texture};
+  slippageFluxUniform.u_timestep = { value: CONTROL.TIMESTEP };
+  slippageFluxUniform.u_talusTangent = { value: TALUS_TANGENT };
+  slippageFluxUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
+  slippageFluxUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
+  slippageFluxUniform.u_div = { value: [1 / width, 1 / height] };
+  
+  slippageApplyUniform = slippageApply.uniforms;
+  slippageApplyUniform.tex_h2 = {value: h2RenderTarget.texture};
+  slippageApplyUniform.tex_slip = {value: slipRenderTarget.texture};
+  slippageApplyUniform.u_div = { value: [1 / width, 1 / height] };
+  
   evaporationUniform = evaporation.uniforms;
-  evaporationUniform.tex_h2 = { value: h2RenderTarget.texture };
+  evaporationUniform.tex_h2 = { value: tmpTarget.texture };
   evaporationUniform.u_timestep = { value: CONTROL.TIMESTEP };
   evaporationUniform.u_evaporation = { value: EVAPORATION };
   evaporationUniform.u_epsilon = { value: EPS };
+  evaporationUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
+  evaporationUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
+  evaporationUniform.u_div = { value: [1 / width, 1 / height] };
 
   outputTexture = h1RenderTarget.texture;
 }
@@ -147,6 +177,8 @@ export function computeTextures() {
   waterIncreamentUniform.u_timestep.value = CONTROL.TIMESTEP;
   fluxSimFluxUniform.u_timestep.value = CONTROL.TIMESTEP;
   fluxSimHeightUniform.u_timestep.value = CONTROL.TIMESTEP;
+  sedimentUniform.u_timestep.value = CONTROL.TIMESTEP;
+  evaporationUniform.u_timestep.value = CONTROL.TIMESTEP;
 
   gpuCompute.doRenderTarget(waterIncreament, h1RenderTarget);
   gpuCompute.doRenderTarget(fluxSimFlux, tmpTarget);
@@ -155,8 +187,9 @@ export function computeTextures() {
   gpuCompute.doRenderTarget(fluxSimVelocity, velRenderTarget);
   gpuCompute.doRenderTarget(erosion, tmpTarget);
   gpuCompute.doRenderTarget(sediment, h2RenderTarget);
-  gpuCompute.doRenderTarget(evaporation, tmpTarget)
-  gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
+  gpuCompute.doRenderTarget(slippageFlux, slipRenderTarget);
+  gpuCompute.doRenderTarget(slippageApply, tmpTarget);
+  gpuCompute.doRenderTarget(evaporation, h2RenderTarget);
 }
 
 export function removeComputeRenderer() {

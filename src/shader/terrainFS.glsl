@@ -10,7 +10,9 @@ varying vec3 vNormal;
 varying vec3 vColor;
 
 void main() {
-  float intentsity = 0.5 + 0.5 * dot(vNormal, directionalLights[0].direction);
+  vec3 light = directionalLights[0].direction;
+  float diffusion = max(0.f, -dot(vNormal, light));
+  float intentsity = 0.3 + diffusion;
   vec3 atmosphere = vColor * intentsity;
   gl_FragColor = vec4(atmosphere, 1.0);
 }
