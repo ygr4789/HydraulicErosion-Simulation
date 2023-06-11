@@ -14,9 +14,10 @@ void main() {
   float vel = length(V.xy);
 
   vec4 H = texture2D(tex_h2, uv);
+  float d = H.y;
   float s = H.z;
 
-  float C = u_capacity * 0.5 * vel;
+  float C = d * u_capacity * 0.1 * vel;
   if(C > s) {
     H.x -= Ks * (C - s);
     H.z += Ks * (C - s);

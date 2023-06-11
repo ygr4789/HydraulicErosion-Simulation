@@ -66,9 +66,14 @@ export function initMesh(width_: number, height_: number, scene: THREE.Scene) {
   geometry.setAttribute("reference", new THREE.BufferAttribute(reference, 2));
   geometry.computeVertexNormals();
 
-  let posUniforms = { texturePosition: { value: null } };
+  let geoUniforms = {
+    tex_alt: { value: null },
+    u_cellWidth: { value: size / width },
+    u_cellHeight: { value: size / height },
+    u_div: { value: [1 / width, 1 / height] },
+  };
   let lightUnifoms = THREE.UniformsLib["lights"];
-  uniforms = THREE.UniformsUtils.merge([posUniforms, lightUnifoms]);
+  uniforms = THREE.UniformsUtils.merge([geoUniforms, lightUnifoms]);
 
   const material = new THREE.ShaderMaterial({
     vertexColors: true,
@@ -76,7 +81,6 @@ export function initMesh(width_: number, height_: number, scene: THREE.Scene) {
     fragmentShader: fragmentShader,
     lights: true,
     uniforms: uniforms,
-    wireframe: true,
   });
 
   mesh = new THREE.Mesh(geometry, material);
@@ -84,7 +88,7 @@ export function initMesh(width_: number, height_: number, scene: THREE.Scene) {
 }
 
 export function updateMesh() {
-  uniforms.texturePosition.value = outputTexture;
+  uniforms.tex_alt.value = outputTexture;
 }
 
 export function removeMesh(scene: THREE.Scene) {
