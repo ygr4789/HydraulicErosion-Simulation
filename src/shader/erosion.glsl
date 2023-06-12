@@ -37,7 +37,7 @@ void main() {
   float d = H.y;
   float s = H.z;
 
-  float C = u_capacity * slope * vel;
+  float C = u_capacity * max(0.1, slope) * vel;
   if(C > s) {
     H.x -= Ks * (C - s);
     H.z += Ks * (C - s);

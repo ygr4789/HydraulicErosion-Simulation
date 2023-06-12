@@ -27,7 +27,7 @@ export function initConstsGUI(gui: GUI) {
   folder.add(CONST, "PIPE_LENGTH", 0, 5);
   folder.add(CONST, "GRAVITY", 0, 10);
   folder.add(CONST, "DAMPING", 0, 10);
-  folder.add(CONST, "CAPACITY_CONSTANT", 0, 0.05);
+  folder.add(CONST, "CAPACITY_CONSTANT", 0, 0.1);
   folder.add(CONST, "EROSION_CONSTANT", 0, 0.1);
   folder.add(CONST, "DEPOSITION_CONSTANT", 0, 0.1);
   folder.add(CONST, "PRECIPITATION", 0, 5);

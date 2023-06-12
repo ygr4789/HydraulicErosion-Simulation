@@ -31,8 +31,6 @@ void main() {
   float sB = max(0.f, (d - dB) - lh_tana);
   float sT = max(0.f, (d - dT) - lh_tana);
 
-  float eff = H.w;
   vec4 S = vec4(sL, sR, sB, sT);
-  if(eff == 0.f) S *= 0.f;
   gl_FragColor = S * dt * 10.0;
 }

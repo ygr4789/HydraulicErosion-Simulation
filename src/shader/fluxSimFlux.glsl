@@ -42,16 +42,17 @@ void main() {
   float dhT = h - hT;
 
   vec4 F = texture2D(tex_flux, uv);
-  float fL = max(F.x  + dhL * Kf, 0.f);
-  float fR = max(F.y  + dhR * Kf, 0.f);
-  float fB = max(F.z  + dhB * Kf, 0.f);
-  float fT = max(F.w  + dhT * Kf, 0.f);
+  float fL = max(F.x * (1.f - Kd) + dhL * Kf, 0.f);
+  float fR = max(F.y * (1.f - Kd) + dhR * Kf, 0.f);
+  float fB = max(F.z * (1.f - Kd) + dhB * Kf, 0.f);
+  float fT = max(F.w * (1.f - Kd) + dhT * Kf, 0.f);
 
   float d = H.y;
   float fTot = fL + fR + fB + fT;
   float V = d * lw * lh;
   float K = min(1.f, V / ((fTot + 0.001) * dt));
-  if(d == 0.f) K = 0.f; 
+  if(d == 0.f)
+    K = 0.f;
 
   gl_FragColor = vec4(fL, fR, fB, fT) * K;
 }
