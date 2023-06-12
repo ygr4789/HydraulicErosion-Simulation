@@ -196,18 +196,24 @@ export function computeAll() {
   // Flux Simulation 3
   gpuCompute.doRenderTarget(fluxSimVelocity, velRenderTarget);
   // Erosion & Deposition
-  gpuCompute.doRenderTarget(erosion, tmpTarget);
-  gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
+  if (CONTROL.EROSION_DEPOSITOIN_ON) {
+    gpuCompute.doRenderTarget(erosion, tmpTarget);
+    gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
+  }
   // Sediment Transportation
-  gpuCompute.doRenderTarget(sediment, tmpTarget);
-  gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
-  // Material Slippage 1
-  gpuCompute.doRenderTarget(slippageFlux, tmpTarget);
-  gpuCompute.renderTexture(tmpTarget.texture, slipRenderTarget);
-  // Material Slippage 2
-  gpuCompute.doRenderTarget(slippageApply, tmpTarget);
-  gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
-  // Evaporation
+  if (CONTROL.SEDIMENT_TRANSPORTATION_ON) {
+    gpuCompute.doRenderTarget(sediment, tmpTarget);
+    gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
+  }
+  if (CONTROL.MATERIAL_SLIPPAGE_ON) {
+    // Material Slippage 1
+    gpuCompute.doRenderTarget(slippageFlux, tmpTarget);
+    gpuCompute.renderTexture(tmpTarget.texture, slipRenderTarget);
+    // Material Slippage 2
+    gpuCompute.doRenderTarget(slippageApply, tmpTarget);
+    gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
+    // Evaporation
+  }
   gpuCompute.doRenderTarget(evaporation, tmpTarget);
   gpuCompute.renderTexture(tmpTarget.texture, h2RenderTarget);
 }
