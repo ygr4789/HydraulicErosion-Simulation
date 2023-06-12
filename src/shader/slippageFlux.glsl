@@ -21,8 +21,6 @@ void main() {
   vec4 HB = texture2D(tex_h2, uv + vec2(0.f, -u_div.y));
   vec4 HT = texture2D(tex_h2, uv + vec2(0.f, u_div.y));
   
-  float eff = H.w + HL.w + HR.w + HB.w + HT.w;
-  
   float d = H.x;
   float dL = HL.x;
   float dR = HR.x;
@@ -33,7 +31,8 @@ void main() {
   float sB = max(0.f, (d - dB) - lh_tana);
   float sT = max(0.f, (d - dT) - lh_tana);
 
+  float eff = H.w;
   vec4 S = vec4(sL, sR, sB, sT);
   if(eff == 0.f) S *= 0.f;
-  gl_FragColor = S * dt;
+  gl_FragColor = S * dt * 10.0;
 }

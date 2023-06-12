@@ -24,7 +24,7 @@ void main() {
   vec4 H = texture2D(tex_h2, uv);
   H.x += dd;
   // effected
-  if(dd != 0.f) H.w = 1.f;
+  if(abs(dd) > 0.f) H.w = 1.f;
   else H.w = 0.f;
   
   gl_FragColor = H;

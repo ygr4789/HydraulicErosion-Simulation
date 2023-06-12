@@ -14,11 +14,11 @@ export const CONST = {
   GRAVITY: 1,
   DAMPING: 1,
   CAPACITY_CONSTANT: 0.01,
-  EROSION_CONSTANT: 0.1,
-  DEPOSITION_CONSTANT: 0.1,
+  EROSION_CONSTANT: 0.02,
+  DEPOSITION_CONSTANT: 0.02,
   PRECIPITATION: 1,
   EVAPORATION: 1,
-  TALUS_TANGENT: 0.5,
+  TALUS_TANGENT: 0.1,
 };
 
 export function initConstsGUI(gui: GUI) {
@@ -27,10 +27,10 @@ export function initConstsGUI(gui: GUI) {
   folder.add(CONST, "PIPE_LENGTH", 0, 5);
   folder.add(CONST, "GRAVITY", 0, 10);
   folder.add(CONST, "DAMPING", 0, 10);
-  folder.add(CONST, "CAPACITY_CONSTANT", 0, 0.01);
+  folder.add(CONST, "CAPACITY_CONSTANT", 0, 0.05);
   folder.add(CONST, "EROSION_CONSTANT", 0, 0.1);
   folder.add(CONST, "DEPOSITION_CONSTANT", 0, 0.1);
-  folder.add(CONST, "PRECIPITATION", 0, 1);
-  folder.add(CONST, "EVAPORATION", 0, 1);
+  folder.add(CONST, "PRECIPITATION", 0, 5);
+  folder.add(CONST, "EVAPORATION", 0, 5);
   folder.add(CONST, "TALUS_TANGENT", 0, 1);
 }
