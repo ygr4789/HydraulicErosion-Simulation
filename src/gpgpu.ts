@@ -142,6 +142,8 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   slippageApplyUniform = slippageApply.uniforms;
   slippageApplyUniform.tex_h2 = { value: h2RenderTarget.texture };
   slippageApplyUniform.tex_slip = { value: slipRenderTarget.texture };
+  slippageApplyUniform.u_timestep = { value: CONTROL.TIMESTEP };
+  slippageApplyUniform.u_epsilon = { value: EPS };
   slippageApplyUniform.u_div = { value: [1 / width, 1 / height] };
 
   evaporationUniform = evaporation.uniforms;
@@ -228,8 +230,8 @@ function newRenderTarget(gpuCompute: GPUComputationRenderer) {
     height,
     THREE.RepeatWrapping,
     THREE.RepeatWrapping,
-    THREE.NearestFilter,
-    THREE.NearestFilter
+    THREE.LinearFilter,
+    THREE.LinearFilter
   );
 }
 

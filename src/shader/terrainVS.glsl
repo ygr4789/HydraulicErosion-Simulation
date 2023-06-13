@@ -10,6 +10,11 @@ uniform float u_vis_s;
 varying vec3 vNormal;
 varying vec3 vColor;
 
+const vec3 ter1Color = vec3(0.6f, 0.64f, 0.47f);
+const vec3 ter2Color = vec3(0.64f, 0.64f, 0.44f);
+const vec3 waterColor = vec3(0, 0, 1);
+const vec3 sediColor = vec3(1, 0, 0);
+
 void main() {
     float lw = u_cellWidth;
     float lh = u_cellHeight;
@@ -32,10 +37,19 @@ void main() {
     float b = H.x;
     float d = H.y;
     float s = H.z;
-    
+
     vNormal = normalMatrix * n;
-    vColor = vec3(1.f + s / u_vis_s, 1.f, 1.f + d / u_vis_d) * 0.5;
-    
+
+    float waterf = d / u_vis_d;
+    float sedif = s / u_vis_s;
+    vec3 fluidColor = waterColor * waterf + sediColor * sedif;
+
+    float terf = max(0.f, b - 1.f);
+    terf = min(terf, 1.f);
+
+    vec3 terColor = ter1Color * terf + ter2Color * (1.f - terf);
+    vColor = terColor * (1.f - waterf) + fluidColor;
+
     vec4 vPosition = vec4(position.x, b + d, position.z, 1.0);
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 }

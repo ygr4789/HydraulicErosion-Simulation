@@ -1,9 +1,13 @@
+uniform float u_timestep;
+uniform float u_epsilon;
 uniform vec2 u_div;
 
 uniform sampler2D tex_h2;
 uniform sampler2D tex_slip;
 
 void main() {
+  float dt = u_timestep;
+  float eps  = u_epsilon;
   vec2 uv = gl_FragCoord.xy / resolution.xy;
 
   vec4 S = texture2D(tex_slip, uv);
@@ -40,7 +44,7 @@ void main() {
 
   H.x += dd;
   // effected
-  if(abs(dd) > 0.f)
+  if(abs(dd) > dt * eps)
     H.w = 1.f;
   else
     H.w = 0.f;

@@ -11,7 +11,7 @@ import { CONTROL, initControlsGUI } from "./control";
 import { initConstsGUI } from "./consts";
 
 const scene = new THREE.Scene();
-const setcolor = "#000000";
+const setcolor = "#e0e0f0";
 scene.background = new THREE.Color(setcolor);
 
 const renderer = new THREE.WebGLRenderer({
