@@ -10,6 +10,7 @@ export const CONTROL = {
   EROSION_DEPOSITOIN_ON: true,
   SEDIMENT_TRANSPORTATION_ON: true,
   MATERIAL_SLIPPAGE_ON: true,
+  UNCONDITIONAL_SLIPPAGE: false
 };
 
 export function initControlsGUI(gui: GUI) {
@@ -28,4 +29,5 @@ export function initControlsGUI(gui: GUI) {
   folder.add(CONTROL, "EROSION_DEPOSITOIN_ON").name("Erosion / Deposition");
   folder.add(CONTROL, "SEDIMENT_TRANSPORTATION_ON").name("Sediment Transportation");
   folder.add(CONTROL, "MATERIAL_SLIPPAGE_ON").name("Material Slippage");
+  folder.add(CONTROL, "UNCONDITIONAL_SLIPPAGE").name("Termal Erosion ");
 }

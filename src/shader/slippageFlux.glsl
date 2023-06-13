@@ -1,4 +1,5 @@
 uniform float u_timestep;
+uniform float u_slippage;
 uniform float u_talusTangent;
 uniform float u_cellWidth;
 uniform float u_cellHeight;
@@ -10,6 +11,7 @@ void main() {
   float dt = u_timestep;
   float lw = u_cellWidth;
   float lh = u_cellHeight;
+  float Ks = u_slippage;
   float tana = u_talusTangent;
   float lw_tana = lw * tana;
   float lh_tana = lh * tana;
@@ -20,7 +22,7 @@ void main() {
   vec4 HR = texture2D(tex_h2, uv + vec2(u_div.x, 0.f));
   vec4 HB = texture2D(tex_h2, uv + vec2(0.f, -u_div.y));
   vec4 HT = texture2D(tex_h2, uv + vec2(0.f, u_div.y));
-  
+
   float d = H.x;
   float dL = HL.x;
   float dR = HR.x;
@@ -32,5 +34,5 @@ void main() {
   float sT = max(0.f, (d - dT) - lh_tana);
 
   vec4 S = vec4(sL, sR, sB, sT);
-  gl_FragColor = S * dt * 10.0;
+  gl_FragColor = S * dt * Ks;
 }

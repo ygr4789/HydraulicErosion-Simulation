@@ -134,14 +134,16 @@ export function initComputeRenderer(width_: number, height_: number, alt: Float3
   slippageFluxUniform = slippageFlux.uniforms;
   slippageFluxUniform.tex_h2 = { value: h2RenderTarget.texture };
   slippageFluxUniform.u_timestep = { value: CONTROL.TIMESTEP };
+  slippageFluxUniform.u_slippage = { value: CONST.THERMAL_CONSTANT };
   slippageFluxUniform.u_talusTangent = { value: CONST.TALUS_TANGENT };
   slippageFluxUniform.u_cellWidth = { value: TERRAIN_SIZE / width };
   slippageFluxUniform.u_cellHeight = { value: TERRAIN_SIZE / height };
   slippageFluxUniform.u_div = { value: [1 / width, 1 / height] };
-
+  
   slippageApplyUniform = slippageApply.uniforms;
   slippageApplyUniform.tex_h2 = { value: h2RenderTarget.texture };
   slippageApplyUniform.tex_slip = { value: slipRenderTarget.texture };
+  slippageApplyUniform.u_uncond = { value: CONTROL.UNCONDITIONAL_SLIPPAGE };
   slippageApplyUniform.u_timestep = { value: CONTROL.TIMESTEP };
   slippageApplyUniform.u_epsilon = { value: EPS };
   slippageApplyUniform.u_div = { value: [1 / width, 1 / height] };
@@ -169,6 +171,7 @@ export function computeTextures() {
   fluxSimHeightUniform.u_timestep.value = CONTROL.TIMESTEP;
   sedimentUniform.u_timestep.value = CONTROL.TIMESTEP;
   slippageFluxUniform.u_timestep.value = CONTROL.TIMESTEP;
+  slippageApplyUniform.u_uncond.value = CONTROL.UNCONDITIONAL_SLIPPAGE;
   evaporationUniform.u_timestep.value = CONTROL.TIMESTEP;
   // Setting Constants (Tuning)
   waterIncreamentUniform.u_arriv.value = CONST.PRECIPITATION;
@@ -179,6 +182,7 @@ export function computeTextures() {
   erosionUniform.u_erosion.value = CONST.EROSION_CONSTANT;
   erosionUniform.u_depsition.value = CONST.DEPOSITION_CONSTANT;
   erosionUniform.u_capacity.value = CONST.CAPACITY_CONSTANT;
+  slippageFluxUniform.u_slippage.value= CONST.THERMAL_CONSTANT;
   slippageFluxUniform.u_talusTangent.value = CONST.TALUS_TANGENT;
   evaporationUniform.u_evaporation.value = CONST.EVAPORATION;
 

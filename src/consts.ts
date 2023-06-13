@@ -18,6 +18,7 @@ export const CONST = {
   DEPOSITION_CONSTANT: 0.05,
   PRECIPITATION: 1,
   EVAPORATION: 1,
+  THERMAL_CONSTANT: 10.0,
   TALUS_TANGENT: 0.5,
 };
 
@@ -32,5 +33,6 @@ export function initConstsGUI(gui: GUI) {
   folder.add(CONST, "DEPOSITION_CONSTANT", 0, 0.1);
   folder.add(CONST, "PRECIPITATION", 0, 5);
   folder.add(CONST, "EVAPORATION", 0, 5);
+  folder.add(CONST, "THERMAL_CONSTANT", 0, 10);
   folder.add(CONST, "TALUS_TANGENT", 0, 1);
 }
